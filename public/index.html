@@ -215,6 +215,79 @@
       font-size: 1.5rem;
     }
 
+    .results-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      font-weight: 500;
+      color: var(--gray);
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(30px);
+    }
+
+    .copy-btn {
+      background: var(--success);
+    }
+
+    .copy-btn:hover {
+      background: #3ab0d5;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -313,6 +386,29 @@
       font-size: 14px;
     }
 
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--success);
+      color: white;
+      padding: 15px 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
     @media (max-width: 768px) {
       .input-group {
         flex-direction: column;
@@ -328,9 +424,28 @@
         grid-template-columns: 1fr;
       }
       
+      .results-controls {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
       table {
         display: block;
         overflow-x: auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .search-card, .student-card {
+        padding: 20px;
+      }
+      
+      .student-name {
+        font-size: 1.5rem;
       }
     }
   </style>
@@ -395,6 +510,19 @@
       </div>
 
       <div class="results-section">
+        <div class="results-controls">
+          <div class="toggle-container">
+            <span class="toggle-label">Show Available Results Only</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="resultsToggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <button class="copy-btn" id="copyResultsBtn">
+            <i class="fas fa-copy"></i> Copy Available Results
+          </button>
+        </div>
+        
         <h3>Academic Results</h3>
         <table>
           <thead>
@@ -417,7 +545,15 @@
     </footer>
   </div>
 
+  <div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span>Results copied to clipboard!</span>
+  </div>
+
   <script>
+    let studentData = null;
+    let filteredCourses = [];
+
     async function fetchStudentData() {
       const matric = document.getElementById("matricInput").value.trim();
       const outputDiv = document.getElementById("studentCard");
@@ -452,6 +588,7 @@
           return;
         }
 
+        studentData = data;
         const student = data.student_data;
         const courses = data.student_courses;
         
@@ -465,29 +602,8 @@
         document.getElementById("session").textContent = student.session || "2022/2023";
         document.getElementById("semester").textContent = student.semester || "Second";
         
-        // Populate results table
-        const resultsTable = document.getElementById("resultsTable");
-        resultsTable.innerHTML = "";
-        
-        courses.forEach(course => {
-          const row = document.createElement("tr");
-          
-          // Determine result class for styling
-          let resultClass = "result-pending";
-          if (course.result !== "NA") {
-            const grade = course.result.charAt(0);
-            resultClass = `result-${grade}`;
-          }
-          
-          row.innerHTML = `
-            <td>${course.course_code}</td>
-            <td>${course.course_title}</td>
-            <td>${course.course_units}</td>
-            <td><span class="result-badge ${resultClass}">${course.result === "NA" ? "Pending" : course.result}</span></td>
-          `;
-          
-          resultsTable.appendChild(row);
-        });
+        // Filter and populate results table
+        filterResults(true);
         
         // Show student card
         outputDiv.style.display = "block";
@@ -500,12 +616,78 @@
       }
     }
 
-    // Allow searching with Enter key
+    function filterResults(availableOnly) {
+      if (!studentData) return;
+      
+      const courses = studentData.student_courses;
+      filteredCourses = availableOnly ? 
+        courses.filter(course => course.result !== "NA") : 
+        courses;
+      
+      // Populate results table
+      const resultsTable = document.getElementById("resultsTable");
+      resultsTable.innerHTML = "";
+      
+      filteredCourses.forEach(course => {
+        const row = document.createElement("tr");
+        
+        // Determine result class for styling
+        let resultClass = "result-pending";
+        if (course.result !== "NA") {
+          const grade = course.result.charAt(0);
+          resultClass = `result-${grade}`;
+        }
+        
+        row.innerHTML = `
+          <td>${course.course_code}</td>
+          <td>${course.course_title}</td>
+          <td>${course.course_units}</td>
+          <td><span class="result-badge ${resultClass}">${course.result === "NA" ? "Pending" : course.result}</span></td>
+        `;
+        
+        resultsTable.appendChild(row);
+      });
+    }
+
+    function copyResultsToClipboard() {
+      if (!filteredCourses.length) return;
+      
+      const student = studentData.student_data;
+      const studentName = `${student.surname} ${student.firstname} ${student.middlename}`;
+      
+      let formattedText = `${studentName}\n`;
+      
+      filteredCourses.forEach(course => {
+        formattedText += `${course.course_code}: ${course.result}\n`;
+      });
+      
+      // Copy to clipboard
+      navigator.clipboard.writeText(formattedText)
+        .then(() => {
+          // Show success toast
+          const toast = document.getElementById("toast");
+          toast.classList.add("show");
+          setTimeout(() => {
+            toast.classList.remove("show");
+          }, 3000);
+        })
+        .catch(err => {
+          console.error("Failed to copy: ", err);
+        });
+    }
+
+    // Event listeners
     document.getElementById("matricInput").addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
         fetchStudentData();
       }
     });
+
+    document.getElementById("resultsToggle").addEventListener("change", function() {
+      filterResults(this.checked);
+    });
+
+    document.getElementById("copyResultsBtn").addEventListener("click", copyResultsToClipboard);
   </script>
 </body>
 </html>
