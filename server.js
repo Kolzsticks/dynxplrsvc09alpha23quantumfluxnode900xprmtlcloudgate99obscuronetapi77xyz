@@ -4,7 +4,7 @@ import url from "url";
 import fs from "fs";
 import path from "path";
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // serve static files (like index.html) from "public" folder
 const __dirname = path.resolve();
