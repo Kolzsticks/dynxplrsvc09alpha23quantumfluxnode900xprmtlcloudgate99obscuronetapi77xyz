@@ -49,66 +49,67 @@
     <div id="output"></div>
   </div>
 
-  <script>
-    async function fetchStudentData() {
-      const matric = document.getElementById("matricInput").value.trim();
-      const outputDiv = document.getElementById("output");
-      outputDiv.innerHTML = "";
+<script>
+  async function fetchStudentData() {
+    const matric = document.getElementById("matricInput").value.trim();
+    const outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = "";
 
-      if (!/^\d{6}$/.test(matric)) {
-        outputDiv.innerHTML = "<p style='color:red;'>Please enter a valid 6-digit matric number.</p>";
+    if (!/^\d{6}$/.test(matric)) {
+      outputDiv.innerHTML = "<p style='color:red;'>Please enter a valid 6-digit matric number.</p>";
+      return;
+    }
+
+    try {
+      const res = await fetch(`https://dynxplrsvc09alpha23quantumfluxnode900xpr.onrender.com/api/student/${matric}`);
+      const data = await res.json();
+
+      if (data.status !== "success") {
+        outputDiv.innerHTML = "<p style='color:red;'>Student not found.</p>";
         return;
       }
 
-      try {
-        const res = await fetch(`http://localhost:5000/api/student/${matric}`);
-        const data = await res.json();
+      const student = data.student_data;
+      const courses = data.student_courses;
 
-        if (data.status !== "success") {
-          outputDiv.innerHTML = "<p style='color:red;'>Student not found.</p>";
-          return;
-        }
-
-        const student = data.student_data;
-        const courses = data.student_courses;
-
-        let html = `
-          <div class="student-info">
-            <h2>${student.surname} ${student.firstname} ${student.middlename}</h2>
-            <p><strong>Matric No:</strong> ${student.matricNo}</p>
-          </div>
-          <h3>Courses & Results</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Course Code</th>
-                <th>Course Title</th>
-                <th>Units</th>
-                <th>Result</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-        courses.forEach(course => {
-          html += `
+      let html = `
+        <div class="student-info">
+          <h2>${student.surname} ${student.firstname} ${student.middlename}</h2>
+          <p><strong>Matric No:</strong> ${student.matricNo}</p>
+        </div>
+        <h3>Courses & Results</h3>
+        <table>
+          <thead>
             <tr>
-              <td>${course.course_code}</td>
-              <td>${course.course_title}</td>
-              <td>${course.course_units}</td>
-              <td>${course.result === "NA" ? "Pending" : course.result}</td>
+              <th>Course Code</th>
+              <th>Course Title</th>
+              <th>Units</th>
+              <th>Result</th>
             </tr>
-          `;
-        });
+          </thead>
+          <tbody>
+      `;
 
-        html += "</tbody></table>";
-        outputDiv.innerHTML = html;
+      courses.forEach(course => {
+        html += `
+          <tr>
+            <td>${course.course_code}</td>
+            <td>${course.course_title}</td>
+            <td>${course.course_units}</td>
+            <td>${course.result === "NA" ? "Pending" : course.result}</td>
+          </tr>
+        `;
+      });
 
-      } catch (error) {
-        console.error(error);
-        outputDiv.innerHTML = "<p style='color:red;'>Error fetching data. Please try again.</p>";
-      }
+      html += "</tbody></table>";
+      outputDiv.innerHTML = html;
+
+    } catch (error) {
+      console.error(error);
+      outputDiv.innerHTML = "<p style='color:red;'>Error fetching data. Please try again.</p>";
     }
-  </script>
+  }
+</script>
+
 </body>
 </html>
