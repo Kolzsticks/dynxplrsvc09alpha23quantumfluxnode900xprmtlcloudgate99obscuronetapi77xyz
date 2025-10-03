@@ -503,10 +503,10 @@
           <span class="detail-label">Session</span>
           <span class="detail-value" id="session">2022/2023</span>
         </div>
-        <div class="detail-item">
+        <!-- <div class="detail-item">
           <span class="detail-label">Semester</span>
           <span class="detail-value" id="semester">Second</span>
-        </div>
+        </div> -->
       </div>
 
       <div class="results-section">
@@ -600,7 +600,7 @@
         document.getElementById("program").textContent = student.dept || "Computer Science";
         document.getElementById("level").textContent = student.level || "300";
         document.getElementById("session").textContent = student.session || "2022/2023";
-        document.getElementById("semester").textContent = student.semester || "Second";
+        // document.getElementById("semester").textContent = student.semester || "Second";
         
         // Filter and populate results table
         filterResults(true);
