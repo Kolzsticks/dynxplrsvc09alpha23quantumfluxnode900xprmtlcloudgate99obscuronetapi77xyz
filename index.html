@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Result Checker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { text-align: center; color: #333; }
+    input, button {
+      width: 100%; padding: 10px; font-size: 16px;
+      margin: 10px 0; border-radius: 8px; border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff; color: white; border: none; cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+    .student-info {
+      margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 10px;
+    }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd; padding: 10px; text-align: center;
+    }
+    th { background: #007bff; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Student Result Checker</h1>
+    <input type="text" id="matricInput" placeholder="Enter Matric Number (6 digits)">
+    <button onclick="fetchStudentData()">Search</button>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    async function fetchStudentData() {
+      const matric = document.getElementById("matricInput").value.trim();
+      const outputDiv = document.getElementById("output");
+      outputDiv.innerHTML = "";
+
+      if (!/^\d{6}$/.test(matric)) {
+        outputDiv.innerHTML = "<p style='color:red;'>Please enter a valid 6-digit matric number.</p>";
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/student/${matric}`);
+        const data = await res.json();
+
+        if (data.status !== "success") {
+          outputDiv.innerHTML = "<p style='color:red;'>Student not found.</p>";
+          return;
+        }
+
+        const student = data.student_data;
+        const courses = data.student_courses;
+
+        let html = `
+          <div class="student-info">
+            <h2>${student.surname} ${student.firstname} ${student.middlename}</h2>
+            <p><strong>Matric No:</strong> ${student.matricNo}</p>
+          </div>
+          <h3>Courses & Results</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>Units</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        courses.forEach(course => {
+          html += `
+            <tr>
+              <td>${course.course_code}</td>
+              <td>${course.course_title}</td>
+              <td>${course.course_units}</td>
+              <td>${course.result === "NA" ? "Pending" : course.result}</td>
+            </tr>
+          `;
+        });
+
+        html += "</tbody></table>";
+        outputDiv.innerHTML = html;
+
+      } catch (error) {
+        console.error(error);
+        outputDiv.innerHTML = "<p style='color:red;'>Error fetching data. Please try again.</p>";
+      }
+    }
+  </script>
+</body>
+</html>
